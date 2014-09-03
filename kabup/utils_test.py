@@ -1,0 +1,20 @@
+# -*- coding :utf-8 -*-
+from analysis import Analysis
+from meigara import Stock
+import unittest
+class UtilsTest(unittest.TestCase) :
+    def setUp(self) :
+        self.filename = "kabuka_data/1491.csv"
+        self.s1 = Stock()
+        self.s1.setStock(self.filename)
+
+    def test_analysis1(self) :
+        print(Analysis().movingAv(self.s1))
+
+    def test_analysis2(self) :
+        print(Analysis().goldenX(self.s1))
+
+
+if __name__ == "__main__" :
+    suite = unittest.TestLoader().loadTestsFromTestCase(UtilsTest)
+unittest.TextTestRunner(verbosity=2).run(suite)

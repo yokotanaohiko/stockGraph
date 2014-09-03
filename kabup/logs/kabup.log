@@ -1,0 +1,5 @@
+/usr/local/Cellar/python/2.7.7_2/Frameworks/Python.framework/Versions/2.7/lib/python2.7/wsgiref/handlers.py:127: DeprecationWarning: Creating streaming responses with `HttpResponse` is deprecated. Use `StreamingHttpResponse` instead if you need the streaming behavior.
+  for data in self.result:
+
+[30/Aug/2014 18:11:31] "GET /d3sample HTTP/1.1" 200 923
+[30/Aug/2014 18:11:31] "GET /static/js/d3.js HTTP/1.1" 200 326522

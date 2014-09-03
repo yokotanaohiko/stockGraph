@@ -1,0 +1,138 @@
+<html>
+	<head>
+		<title>D3を試してみる</title>
+		<script src="{{ STATIC_URL }}js/d3.js" charset="utf-8"></script>
+		<script src="{{ STATIC_URL }}js/ychart.js" charset="utf-8"></script>
+		<script src="{{ STATIC_URL }}js/indices.js" charset="utf-8"></script>
+		<style type="text/css">
+			div.bar{
+				display:inline-block;
+				width:20px;
+				height:75px;
+				background-color:teal;
+			}
+
+			.axis path,
+			.axis line{
+				fill:none;
+				stroke:black;
+				shape-rendering:crispEdges;
+			}
+			.axis text{
+				font-family:sans-serif;
+				font-size:6px;
+			}
+			.line{
+				fill:none;
+			}
+		</style>
+	</head>
+	<body>
+	<script type="text/javascript">
+		d3.json("http://localhost:8000/kabuka_json/4679/",function(error,data){
+			var dataSet = []; 
+			for(var i=0;i<data.length;i++){
+				if(! isNaN(data[i][0])){
+					var date = new Date(data[i][0]);
+					dataSet.push([
+						date,
+						data[i][1],
+						data[i][2],
+						data[i][3],
+						data[i][4],
+						data[i][5],
+						]);
+				}
+			}	
+			//dataSet = dataSet.slice(0,50);
+			var w = 700;
+			var h = 300;
+			var padding = 30;
+			var yMargin = 40;
+
+			//線形スケールの定義
+			var xScale = d3.time.scale()
+			.domain([
+				dataSet[0][0],
+				dataSet[dataSet.length-1][0]
+				])
+			.range([padding,w-padding*2]);
+			var yScale = d3.scale.linear()
+				.domain([
+						d3.min(dataSet,function(d){return d[1];})-yMargin,
+						d3.max(dataSet,function(d){return d[1];})+yMargin])
+				.range([h-padding,padding]);
+
+			var svg = d3.select("body")
+			.append("svg")
+			.attr("width",w)
+			.attr("height",h);
+			
+			rousoku(svg,dataSet,xScale,yScale);
+
+//		svg.selectAll("text")
+//		.data(dataSet)
+//	.enter()
+//		.append("text")
+//		.text(function(d){
+//				return d[1];
+//				})
+//	.attr("x",function(d){
+//				return xScale(d[0]);
+//			})
+//	.attr("y",function(d){
+//				return yScale(d[1]);
+//			})
+//	.attr("fill","red");
+
+			//線の定義
+			var line1=d3.svg.line()
+				.x(function(d){return xScale(d[0]);})
+				.y(function(d){return yScale(d[1]);});
+			var line2=d3.svg.line()
+				.x(function(d){return xScale(d[0]);})
+				.y(function(d){return yScale(d[2]);});
+			var line3=d3.svg.line()
+				.x(function(d){return xScale(d[0]);})
+				.y(function(d){return yScale(d[3]);});
+			var line4=d3.svg.line()
+				.x(function(d){return xScale(d[0]);})
+				.y(function(d){return yScale(d[4]);});
+			//移動平均線の挿入
+			//drawLine(svg,movingAv(dataSet,25),line4,"blue");
+			//drawLine(svg,movingAv(dataSet,75),line4,"orange");
+
+
+			//一目均衡表の挿入
+			tenkansen=baseLine(dataSet,9);
+			kijunsen=baseLine(dataSet,26);
+			drawLine(svg,tenkansen,line1,"green");
+			drawLine(svg,kijunsen,line1,"green");
+			drawLine(svg,timeShift(dataSet,-25),line4,"black");
+			drawLine(svg,timeShift(baseLine(dataSet,52),25),line1);
+			drawLine(svg,timeShift(dataAv(tenkansen,kijunsen),25),line1,"purple");
+
+
+			//軸の挿入
+			var xAxis = d3.svg.axis()
+				.scale(xScale)
+				.orient("bottom")
+				.ticks(10);
+			svg.append("g")
+				.attr("class","axis")
+				.attr("transform","translate(0,"+(h-padding)+")")
+				.call(xAxis);
+
+			var yAxis = d3.svg.axis()
+				.scale(yScale)
+				.orient("left")
+				.ticks(5);
+			svg.append("g")
+				.attr("class","axis")
+				.attr("transform","translate("+padding+",0)")
+				.call(yAxis);
+		});
+
+		</script>
+	</body>
+</html>

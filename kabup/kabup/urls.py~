@@ -1,0 +1,21 @@
+from django.conf.urls import patterns, include, url
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.contrib import admin
+admin.autodiscover()
+
+urlpatterns = patterns('',
+    # Examples:
+    # url(r'^$', 'kabup.views.home', name='home'),
+    # url(r'^blog/', include('blog.urls')),
+    
+    url(r'^admin/', include(admin.site.urls)),
+    (r'^item/(?P<item_id>\d{1})/$','itempage.views.item_page_display'),
+    (r'^kabuka$','itempage.views.item_page2'),
+    #(r'^kabuka_download$','itempage.views.kabuka_download'),
+    (r'^sample$','itempage.views.sample'),
+    (r'^golden$','itempage.views.goldenXList'),
+    (r'^kabuka_print$','itempage.views.kabuka_print'),
+    (r'^kabuka_json/(?P<stock_num>\d{4})/$','itempage.views.ohlc_print'),
+)
+
+urlpatterns += staticfiles_urlpatterns()

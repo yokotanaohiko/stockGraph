@@ -1,0 +1,6 @@
+(20) statement aborts at 6: [INSERT INTO meigara VALUES(?,?,?,?)] datatype mismatch
+(1) no such table: meigaras
+(20) statement aborts at 6: [INSERT INTO meigara VALUES(?,?,?,?)] datatype mismatch
+(19) abort at 15 in [INSERT INTO meigara VALUES(?,?,?,?)]: PRIMARY KEY must be unique
+(20) statement aborts at 6: [INSERT INTO meigara VALUES(?,?,?,?)] datatype mismatch
+(20) statement aborts at 6: [INSERT INTO meigara VALUES(?,?,?,?)] datatype mismatch

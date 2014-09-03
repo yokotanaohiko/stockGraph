@@ -1,0 +1,35 @@
+<html>
+				<head>
+								<title>{{ title }}の株価データ</title>
+				</head>
+				<body>
+								<div>サンプルの表記</div>
+								<div>
+												<script src="http://ccchart.com/js/ccchart.js" charset="utf-8"></script>
+												<canvas id="hoge"></canvas>
+												<script>
+																var chartdata32={
+																				"config":{
+																								"title":"の株価",
+																								"subTitle":"daf",
+																								"roundedUpMaxY":1000,
+																								"useVal":"yes",
+																								"colorSet":
+																												["#00ff00","#ff0000","#0000ff","#ff00ff","#ffff00"],
+																								"type":"line"
+																				},
+
+																				"data":[
+																								["日時",100,200,300,400],
+																								["始値",{{item1.hajimene}},{{item2.hajimene}},{{item3.hajimene}},{{item4.hajimene}}],
+																								["終値",{{item1.owarine}},{{item2.owarine}},{{item3.owarine}},{{item4.owarine}}],
+																								["高値",{{item1.takane}},{{item2.takane}},{{item3.takane}},{{item4.takane}}],
+																								["安値",{{item1.yasune}},{{item2.yasune}},{{item3.yasune}},{{item4.yasune}}], 
+																				],
+
+																};
+																ccchart.init('hoge',chartdata32);
+												</script>
+								</div> 
+				</body>
+</html>

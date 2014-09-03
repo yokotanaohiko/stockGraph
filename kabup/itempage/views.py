@@ -1,0 +1,247 @@
+#-*- coding: utf-8 -*-
+from django.shortcuts import render,render_to_response
+from django.http import HttpResponse
+from django.template import Context,loader,RequestContext
+from models import Item,Meigara
+
+
+black_list = set()
+black_list.add('4689')
+black_list.add('2170')
+
+def item_page_display(request,item_id):
+    item = Item.objects.get(id=item_id)
+
+    t = loader.get_template('page/item.html')
+    c = Context(
+            {'item':item })
+
+    return HttpResponse(t.render(c))
+
+def item_page2(request):
+    t = loader.get_template('page/graph.html')
+    tit = u'ソフトバンク'
+    c = Context({'title':tit})
+    import datetime
+    for i in range(1, 6):
+        item = Item.objects.get(id=i)
+        if i != 6:
+            c['item'+str(i)] = item
+
+    c['times1'] = datetime.date.today().year 
+        
+    return HttpResponse(t.render(c))
+
+#この関数はもう使っちゃダメ（ダウンロードしたデータが新しくなっちゃうため）
+#この関数で、一度株価データをダウンロードした後は、ヤフーファイナンスから
+#スクレイピングしたデータを追加していく。
+#urls.py から外しとく
+def kabuka_download(request):
+    import urllib,datetime
+    for mei in Meigara.objects.all():
+        if __isTosyo(mei.torihiki) :
+            urls = "http://k-db.com/stocks/%d-T?download=csv" % mei.num
+        if __isHukusyo(mei.torihiki) :
+            urls = "http://k-db.com/stocks/%d-F?download=csv" % mei.num
+        if __isSassyo(mei.torihiki) :
+            urls = "http://k-db.com/stocks/%d-S?download=csv" % mei.num
+        if mei.num not in black_list :
+            urllib.urlretrieve(urls,"kabuka_data/%d.csv" % mei.num)
+    return HttpResponse(render_to_response('page/item.html',{'head':"%s:情報を更新しました。" % datetime.datetime.now() },context_instance=RequestContext(request))) 
+
+
+def kabuka_print(request):
+    from meigara import Stock
+    stock_list = []
+    for mei in Meigara.objects.all():
+        if not __isTosyo(mei.torihiki):
+            st = Stock()
+            st.setName(mei.num)
+            st.setStockNum(mei.torihiki)
+            stock_list.append(st)
+    return HttpResponse(render_to_response('page/item.html',{'head':"銘柄番号の一覧を表示します。",'stock_list':stock_list},context_instance=RequestContext(request)))
+def sample(request) :
+    t = loader.get_template('page/top.html')
+    title = u'サンプルタイトル'
+    c = Context({'title',title})
+    return HttpResponse(t.render(c))
+
+def __isTosyo(torihiki):
+    tosyo = set(("東証","東証1部","東証1部外国","東証2部","JQ","JQグロース","JQスタンダード","JQスタンダード外国","東証マザーズ","東証TPM","東証マザーズ外国"))
+    if str(torihiki) in tosyo :
+        return True 
+    else :
+        return False
+
+def __isHukusyo(torihiki):
+    hukusyo = set(("福証","福証Q-Board"))
+    if str(torihiki) in hukusyo :
+        return True 
+    else :
+        return False
+
+def __isSassyo(torihiki):
+    sassyo = set(("札証","札証アンビシャス"))
+    if str(torihiki) in sassyo :
+        return True 
+    else :
+        return False
+
+def goldenXList(request):
+    stock_list = []
+    from meigara import Stock
+    from analysis import Analysis
+    import jsm
+    count = 0
+    for stock in Meigara.objects.all() :
+    #for stock in ('4689','2170') :
+        #yahoo_finance = jsm.Finance()
+        #finance_data = yahoo_finance.get(stock.num)
+        if count > 3 :
+            break
+        #if finance_data.round_lot > 100 :
+        #    break
+        if str(stock.num) not in black_list:
+            st = Stock()
+            st.setStock("kabuka_data/"+str(stock.num)+".csv")
+            ans =Analysis().goldenX(st) 
+            if ans < 9 and ans >= 0 :
+                count += 1
+                stock_list.append(st)
+
+    return HttpResponse(render_to_response('page/item.html',{'stock_list':stock_list,'head':"ゴールデンクロスリスト"},context_instance=RequestContext(request)))
+# 始値、高値、安値、終値をjsonで返す
+def ohlc_week(request,stock_num) :
+    import json
+    from meigara import Stock
+    import time
+    from analysis import Analysis
+    st2 = Stock()
+    st2.setStock("static/kabuka_data/"+str(stock_num)+".csv")
+    st = st2.getWeekData()
+    short_average = Analysis().movingAv(st,span=25);
+    long_average = Analysis().movingAv(st,span=75);
+    stock_dict = []
+    for i in range(len(st.date)) :
+        stock_dict.append(map(int,[
+                time.mktime(st.getDate(i).timetuple())*1000,
+                st.getOpeningPrice(i),
+                st.getHighPrice(i) ,
+                st.getLowPrice(i) ,
+                st.getClosingPrice(i) ,
+                st.getDealings(i) ,
+                short_average[i],
+                long_average[i]
+                ]))
+    
+    return HttpResponse(json.dumps(stock_dict),mimetype='application/json')
+# 始値、高値、安値、終値をjsonで返す
+def ohlc_month(request,stock_num) :
+    import json
+    from meigara import Stock
+    import time
+    from analysis import Analysis
+    st2 = Stock()
+    st2.setStock("static/kabuka_data/"+str(stock_num)+".csv")
+    st = st2.getMonthData()
+    short_average = Analysis().movingAv(st,span=25);
+    long_average = Analysis().movingAv(st,span=75);
+    stock_dict = []
+    for i in range(len(st.date)) :
+        stock_dict.append(map(int,[
+                time.mktime(st.getDate(i).timetuple())*1000,
+                st.getOpeningPrice(i),
+                st.getHighPrice(i) ,
+                st.getLowPrice(i) ,
+                st.getClosingPrice(i) ,
+                st.getDealings(i) ,
+                short_average[i],
+                long_average[i]
+                ]))
+    
+    return HttpResponse(json.dumps(stock_dict),mimetype='application/json')
+
+# 始値、高値、安値、終値をjsonで返す
+def ohlc_print(request,stock_num) :
+    import json
+    from meigara import Stock
+    import time
+    from analysis import Analysis
+    st = Stock()
+    st.setStock("static/kabuka_data/"+str(stock_num)+".csv")
+    short_average = Analysis().movingAv(st,span=25);
+    long_average = Analysis().movingAv(st,span=75);
+    stock_dict = []
+    for i in range(len(st.date)) :
+        stock_dict.append(map(int,[
+                time.mktime(st.getDate(i).timetuple())*1000,
+                st.getOpeningPrice(i),
+                st.getHighPrice(i) ,
+                st.getLowPrice(i) ,
+                st.getClosingPrice(i) ,
+                st.getDealings(i) ,
+                short_average[i],
+                long_average[i]
+                ]))
+    
+    return HttpResponse(json.dumps(stock_dict),mimetype='application/json')
+
+#ヤフーファイナンスのスクレイピングのパッケージjsmを使って、
+#株価データの更新を行う。
+def kabuka_add_today(request):
+    import jsm
+    import datetime
+    yahoo_finance = jsm.Quotes()
+    for mei in Meigara.objects.all():
+        f = open('kabuka_data/%s.csv' % mei.num,'a')
+        sd = yahoo_finance.get_price(int(mei.num))
+        add_str = []
+        dates = "%04d-%02d-%02d" % (sd.date.year,sd.date.month,sd.date.day)
+        add_str.append(dates)
+        add_str.append(str(sd.open))
+        add_str.append(str(sd.high))
+        add_str.append(str(sd.low))
+        add_str.append(str(sd.close))
+        add_str.append(str(sd.volume))
+        add_str.append(str(sd.close*sd.volume))
+        f.write(",".join(add_str)+"\n")
+        f.close()
+
+    return HttpResponse(render_to_response('page/item.html',{'head':"%s:データを更新しました" % datetime.datetime.now() },context_instance=RequestContext(request))) 
+
+def kabuka_download(request):
+    import os
+    import jsm
+    import datetime
+    yahoo_finance = jsm.Quotes()
+    for mei in Meigara.objects.all() :
+        filename ='stock_data/%s.csv' % mei.num ; 
+        sd = yahoo_finance.get_finance(int(mei.num))
+        if not os.path.exists(filename) :
+            f = open(filename,'w')
+            line1 = []
+            line1.append(mei.num)
+            line1.append(mei.meigara)
+            line1.append(sd.round_lot)
+            line1.append(sd.shares_issued)
+            f.write(",".join(map(str,line1))+"\n")
+            line2 = []
+            line2.append("日付")
+            line2.append("始値")
+            line2.append("高値")
+            line2.append("安値")
+            line2.append("終値")
+            line2.append("出来高")
+            line2.append("売買代金")
+            f.write(",".join(line2)+"\n")
+            f.close()
+        else :
+            f = open(filename,'a')
+            sd = yahoo_finance.get_historical_prices(int(mei.num),jsm.DAILY,all=True)
+            #ここに、過去から今までの株価を保存するコードを追加する。
+
+def d3sample(request) :
+     
+    return HttpResponse(render_to_response('page/d3sample.html',{'head':"データを更新しました" } ,context_instance=RequestContext(request))) 
+ 
+
